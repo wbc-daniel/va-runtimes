@@ -23,7 +23,7 @@ steps:
       - type: commit
         message: "chore: publish flutter {{version}}"
       - type: create_tag
-        tag: "flutter-{{version}}"
+        tag: "vector_animate_flutter-v{{version}}"
         message: "Flutter release {{version}}"
       - type: push
         remote: origin
@@ -45,7 +45,7 @@ steps:
       - type: commit
         message: "chore: publish web app {{version}}"
       - type: create_tag
-        tag: "web-{{version}}"
+        tag: "vector_animate_web-v{{version}}"
         message: "Web app release {{version}}"
       - type: push
         remote: origin
