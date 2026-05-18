@@ -82,8 +82,8 @@ git checkout -- .
 ```yaml
 steps:
   <step_name>:
-    version_from: path/to/pubspec.yaml   # or package.json — optional
-    only_if_changes: true                # optional, applies to all git operations in this step
+    version_from: path/to/pubspec.yaml # or package.json — optional
+    only_if_changes: true # optional, applies to all git operations in this step
     operations:
       - type: copy | commit | create_tag | push | push_tags
         # ... operation-specific fields
@@ -91,10 +91,10 @@ steps:
 
 ### Step fields
 
-| Field | Description |
-|---|---|
-| `version_from` | Path to `pubspec.yaml` or `package.json` (relative to repo root or `~`). Exposes `{{version}}` to all operations in the step. |
-| `only_if_changes` | When `true`, all git operations in the step are skipped if no commit was made. Individual operations can override this. |
+| Field             | Description                                                                                                                   |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `version_from`    | Path to `pubspec.yaml` or `package.json` (relative to repo root or `~`). Exposes `{{version}}` to all operations in the step. |
+| `only_if_changes` | When `true`, all git operations in the step are skipped if no commit was made. Individual operations can override this.       |
 
 ### Operations
 
@@ -102,56 +102,45 @@ steps:
 
 Copies a directory into the repo root. Performs a clean sync — files deleted from the source are removed from the destination.
 
-| Field | Description |
-|---|---|
-| `src` | Source path. Supports `~` and relative paths (resolved from repo root). |
-| `dest` | Destination directory name inside the repo root. Defaults to the source directory's basename. |
-| `hash_check` | Skip copy if source hash matches stored hash. |
-| `ignore` | List of file/folder names or glob patterns to exclude. |
+| Field        | Description                                                                                   |
+| ------------ | --------------------------------------------------------------------------------------------- |
+| `src`        | Source path. Supports `~` and relative paths (resolved from repo root).                       |
+| `dest`       | Destination directory name inside the repo root. Defaults to the source directory's basename. |
+| `hash_check` | Skip copy if source hash matches stored hash.                                                 |
+| `ignore`     | List of file/folder names or glob patterns to exclude.                                        |
 
 #### `commit`
 
 Stages all changes and creates a git commit.
 
-| Field | Description |
-|---|---|
-| `message` | Commit message. Supports `{{version}}` and any `vars` keys. |
-| `vars` | Key-value pairs substituted into `message`. Merged with step-level vars; operation wins on conflict. |
+| Field     | Description                                                                                          |
+| --------- | ---------------------------------------------------------------------------------------------------- |
+| `message` | Commit message. Supports `{{version}}` and any `vars` keys.                                          |
+| `vars`    | Key-value pairs substituted into `message`. Merged with step-level vars; operation wins on conflict. |
 
 #### `create_tag`
 
 Creates a git tag at the current HEAD.
 
-| Field | Description |
-|---|---|
-| `tag` | Tag name. Supports `{{version}}` and any `vars` keys. |
-| `message` | If provided, creates an annotated tag. |
-| `vars` | Key-value pairs substituted into `tag` and `message`. |
+| Field     | Description                                           |
+| --------- | ----------------------------------------------------- |
+| `tag`     | Tag name. Supports `{{version}}` and any `vars` keys. |
+| `message` | If provided, creates an annotated tag.                |
+| `vars`    | Key-value pairs substituted into `tag` and `message`. |
 
 #### `push`
 
 Pushes a branch to a remote.
 
-| Field | Description |
-|---|---|
+| Field    | Description                      |
+| -------- | -------------------------------- |
 | `remote` | Remote name (default: `origin`). |
-| `branch` | Branch ref (default: `HEAD`). |
+| `branch` | Branch ref (default: `HEAD`).    |
 
 #### `push_tags`
 
 Pushes all tags to a remote.
 
-| Field | Description |
-|---|---|
+| Field    | Description                      |
+| -------- | -------------------------------- |
 | `remote` | Remote name (default: `origin`). |
-
----
-
-## Published artifacts
-
-| Directory | Source |
-|---|---|
-| `vector_animate_flutter/` | Flutter package |
-| `dist/` | Web app build output |
-
-Each artifact directory contains a `.publish-hash` file recording the SHA-256 hash of the source at the time it was last published.
