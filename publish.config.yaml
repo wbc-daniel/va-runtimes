@@ -3,8 +3,8 @@ steps:
     operations:
       - type: copy
         src: ../animations/vector_animate_flutter
+        dest: packages/flutter
         hash_check: true
-        use_gitignore: true
         ignore:
           - "*.map"
           - "*.md"
@@ -35,12 +35,8 @@ steps:
     operations:
       - type: copy
         src: ../animations/vector_animate_web/dist
+        dest: packages/web
         hash_check: true
-        use_gitignore: true
-        ignore:
-          - "node_modules"
-          - ".cache"
-          - "*.log"
 
   publish_web:
     version_from: ../animations/vector_animate_web/package.json

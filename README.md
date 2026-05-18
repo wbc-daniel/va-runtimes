@@ -10,7 +10,7 @@ A repository that holds published, versioned snapshots of built application arti
 
 ### Change detection
 
-The copy operation computes a SHA-256 hash of the source directory (honoring both `ignore` patterns and `.gitignore`) and compares it to the hash stored in `<dest>/.publish-hash` from the previous run. If the hashes match, the copy is skipped entirely. When a copy does happen, the hash file is updated and committed alongside the artifact files — giving a traceable record of what source state each published version corresponds to.
+The copy operation computes a SHA-256 hash of the source directory (honoring `ignore` patterns) and compares it to the hash stored in `<dest>/.publish-hash` from the previous run. If the hashes match, the copy is skipped entirely. When a copy does happen, the hash file is updated and committed alongside the artifact files — giving a traceable record of what source state each published version corresponds to.
 
 Git operations (`commit`, `create_tag`, `push`, `push_tags`) respect the step-level `only_if_changes` flag. When set, they are all skipped if no commit was produced in the same step, so a no-op copy cleanly propagates through and prevents empty commits or duplicate tags.
 
@@ -51,6 +51,17 @@ node scripts/publish/publish.js copy_flutter copy_web
 # 2. Commit, tag, and push (skipped if copy found no changes)
 node scripts/publish/publish.js publish_flutter publish_web
 ```
+
+### Custom config
+
+Use `--config` (or `-c`) to point to a different config file:
+
+```bash
+node scripts/publish/publish.js --config path/to/other.config.yaml
+node scripts/publish/publish.js -c path/to/other.config.yaml copy_flutter
+```
+
+The path is resolved relative to the current working directory.
 
 ### Dry run
 
@@ -94,9 +105,9 @@ Copies a directory into the repo root. Performs a clean sync — files deleted f
 | Field | Description |
 |---|---|
 | `src` | Source path. Supports `~` and relative paths (resolved from repo root). |
+| `dest` | Destination directory name inside the repo root. Defaults to the source directory's basename. |
 | `hash_check` | Skip copy if source hash matches stored hash. |
-| `use_gitignore` | Run `git ls-files` in the source and copy only tracked files, respecting all `.gitignore` rules. Falls back gracefully if the source is not a git repo. |
-| `ignore` | List of file/folder names or glob patterns to exclude (applied on top of `use_gitignore`). |
+| `ignore` | List of file/folder names or glob patterns to exclude. |
 
 #### `commit`
 

@@ -5,7 +5,7 @@ const path = require('path');
 const crypto = require('crypto');
 const { execFileSync } = require('child_process');
 const yaml = require('js-yaml');
-const minimatch = require('minimatch');
+const { minimatch } = require('minimatch');
 
 const REPO_ROOT = path.resolve(__dirname, '../..');
 const CONFIG_PATH = path.join(REPO_ROOT, 'publish.config.yaml');
@@ -58,24 +58,9 @@ function interpolate(template, vars) {
   });
 }
 
-// --- Gitignore ---
-
-function getTrackedFiles(srcDir) {
-  try {
-    const out = execFileSync('git', ['ls-files'], {
-      cwd: srcDir,
-      encoding: 'utf8',
-      stdio: ['pipe', 'pipe', 'pipe'],
-    });
-    return new Set(out.trim().split('\n').filter(Boolean));
-  } catch {
-    return null; // not a git repo — fall back to no gitignore filtering
-  }
-}
-
 // --- Hash ---
 
-function computeDirHash(dirPath, ignorePatterns, trackedFiles) {
+function computeDirHash(dirPath, ignorePatterns) {
   const hash = crypto.createHash('sha256');
 
   function walk(dir, relBase) {
@@ -90,7 +75,6 @@ function computeDirHash(dirPath, ignorePatterns, trackedFiles) {
       if (entry.isDirectory()) {
         walk(full, rel);
       } else {
-        if (trackedFiles && !trackedFiles.has(rel)) continue;
         hash.update(rel); // include relative path so renames are detected
         hash.update(fs.readFileSync(full));
       }
@@ -110,19 +94,17 @@ function clearDir(dir, preserve = []) {
   }
 }
 
-function copyDir(src, dest, ignorePatterns, trackedFiles, relBase = '') {
+function copyDir(src, dest, ignorePatterns) {
   for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
     if (shouldIgnore(entry.name, ignorePatterns)) {
       console.log(`  skip  ${path.join(src, entry.name)}`);
       continue;
     }
-    const rel = relBase ? relBase + '/' + entry.name : entry.name;
     const srcPath = path.join(src, entry.name);
     const destPath = path.join(dest, entry.name);
     if (entry.isDirectory()) {
-      copyDir(srcPath, destPath, ignorePatterns, trackedFiles, rel);
+      copyDir(srcPath, destPath, ignorePatterns);
     } else {
-      if (trackedFiles && !trackedFiles.has(rel)) continue;
       fs.mkdirSync(path.dirname(destPath), { recursive: true });
       fs.copyFileSync(srcPath, destPath);
       console.log(`  copy  ${srcPath} -> ${destPath}`);
@@ -133,20 +115,15 @@ function copyDir(src, dest, ignorePatterns, trackedFiles, relBase = '') {
 function runCopy(operation, stepName) {
   const src = operation.src.replace(/^~/, process.env.HOME);
   const resolvedSrc = path.resolve(REPO_ROOT, src);
-  const dest = path.join(REPO_ROOT, path.basename(resolvedSrc));
+  const dest = path.join(REPO_ROOT, operation.dest || path.basename(resolvedSrc));
   const ignorePatterns = operation.ignore || [];
 
   if (!fs.existsSync(resolvedSrc)) {
     throw new Error(`[${stepName}] Source not found: ${resolvedSrc}`);
   }
 
-  const trackedFiles = operation.use_gitignore ? getTrackedFiles(resolvedSrc) : null;
-  if (operation.use_gitignore && trackedFiles) {
-    console.log(`[${stepName}] Respecting .gitignore (${trackedFiles.size} tracked files)`);
-  }
-
   if (operation.hash_check) {
-    const sourceHash = computeDirHash(resolvedSrc, ignorePatterns, trackedFiles);
+    const sourceHash = computeDirHash(resolvedSrc, ignorePatterns);
     const hashFilePath = path.join(dest, HASH_FILE);
     const storedHash = fs.existsSync(hashFilePath)
       ? fs.readFileSync(hashFilePath, 'utf8').trim()
@@ -161,12 +138,12 @@ function runCopy(operation, stepName) {
     console.log(`[${stepName}] Changes detected (${prev} -> ${sourceHash.slice(0, 8)})`);
     fs.mkdirSync(dest, { recursive: true });
     clearDir(dest, [HASH_FILE]);
-    copyDir(resolvedSrc, dest, ignorePatterns, trackedFiles);
+    copyDir(resolvedSrc, dest, ignorePatterns);
     fs.writeFileSync(hashFilePath, sourceHash + '\n');
   } else {
     console.log(`[${stepName}] copy ${resolvedSrc} -> ${dest}`);
     fs.mkdirSync(dest, { recursive: true });
-    copyDir(resolvedSrc, dest, ignorePatterns, trackedFiles);
+    copyDir(resolvedSrc, dest, ignorePatterns);
   }
 }
 
@@ -284,17 +261,33 @@ function runStep(stepName, step, dryRun) {
   }
 }
 
-function main() {
-  const argv = process.argv.slice(2);
+function parseArgs(argv) {
   const dryRun = argv.includes('--dry-run');
-  const args = argv.filter((a) => a !== '--dry-run');
+  let configPath = CONFIG_PATH;
+  const steps = [];
+
+  const rest = argv.filter((a) => a !== '--dry-run');
+  for (let i = 0; i < rest.length; i++) {
+    if (rest[i] === '--config' || rest[i] === '-c') {
+      if (!rest[i + 1]) { console.error('--config requires a path'); process.exit(1); }
+      configPath = path.resolve(rest[++i]);
+    } else {
+      steps.push(rest[i]);
+    }
+  }
+
+  return { dryRun, configPath, steps };
+}
+
+function main() {
+  const { dryRun, configPath, steps: stepArgs } = parseArgs(process.argv.slice(2));
 
   if (dryRun) console.log('[dry-run] Git operations will be skipped. Changes can be reverted with: git checkout -- .\n');
 
-  const config = loadConfig(CONFIG_PATH);
+  const config = loadConfig(configPath);
   const { steps } = config;
 
-  const targetSteps = args.length > 0 ? args : Object.keys(steps);
+  const targetSteps = stepArgs.length > 0 ? stepArgs : Object.keys(steps);
 
   for (const stepName of targetSteps) {
     if (!steps[stepName]) {
