@@ -1,0 +1,12 @@
+{
+  "name": "va-runtimes-publish",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "publish": "node publish.js"
+  },
+  "dependencies": {
+    "js-yaml": "^4.1.0",
+    "minimatch": "^9.0.0"
+  }
+}
