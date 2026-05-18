@@ -24,7 +24,7 @@ steps:
         message: "chore: publish flutter {{version}}"
       - type: create_tag
         tag: "vector_animate_flutter-v{{version}}"
-        message: "Flutter release {{version}}"
+        message: "Flutter runtime v{{version}}"
       - type: push
         remote: origin
         branch: main
@@ -46,7 +46,7 @@ steps:
         message: "chore: publish web app {{version}}"
       - type: create_tag
         tag: "vector_animate_web-v{{version}}"
-        message: "Web app release {{version}}"
+        message: "Web runtime v{{version}}"
       - type: push
         remote: origin
         branch: main
